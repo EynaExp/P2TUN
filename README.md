@@ -4,6 +4,8 @@ Convert any local or remote SOCKS4, SOCKS5, or HTTP proxy into a virtual TUN int
 
 Powered by `sing-box` core with `gVisor` userspace network stack.
 
+![P2TUN Interface](screenshot.png)
+
 ---
 
 ## Features
