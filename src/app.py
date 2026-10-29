@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-P2TUN - Luxury Black, Gold & White Desktop GUI
-Rounded pills, borders, and inputs.
-Converts SOCKS4, SOCKS5, or HTTP proxy to TUN VPN interface.
+P2TUN - Compact, Pixel-Fit Responsive Desktop GUI
+Obsidian Black, Metallic Gold & Crisp White.
+Fits screen cleanly without clipping or overflow.
 """
 
 import sys
@@ -45,201 +45,187 @@ def get_core_path():
             return os.path.abspath(p)
     return core_name
 
-class RoundedContainer(tk.Canvas):
-    """Draws sleek curved-corner pill/card container"""
-    def __init__(self, parent, bg="#08080a", border="#d4af37", fill="#111116", radius=16, border_w=1.5, **kwargs):
-        super().__init__(parent, bg=bg, highlightthickness=0, **kwargs)
-        self.fill_color = fill
-        self.border_color = border
-        self.radius = radius
-        self.border_w = border_w
-        self.bind("<Configure>", self._redraw)
-
-    def _redraw(self, event=None):
-        self.delete("all")
-        w = self.winfo_width()
-        h = self.winfo_height()
-        r = min(self.radius, h // 2, w // 2)
-        bw = self.border_w
-
-        points = [
-            r, bw,
-            w - r, bw,
-            w - bw, bw,
-            w - bw, r,
-            w - bw, h - r,
-            w - bw, h - bw,
-            w - r, h - bw,
-            r, h - bw,
-            bw, h - bw,
-            bw, h - r,
-            bw, r,
-            bw, bw,
-            r, bw
-        ]
-        self.create_polygon(points, smooth=True, fill=self.fill_color, outline=self.border_color, width=bw)
-
 class P2TUNDesktop(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("P2TUN — Luxury Black & Gold VPN Engine")
-        self.geometry("600x730")
-        self.minsize(560, 680)
+        self.title("P2TUN — Proxy to TUN Interface")
+        self.geometry("480x620")
+        self.minsize(440, 560)
 
+        # Palette
         self.c_bg = "#07070a"
-        self.c_card = "#0f0f14"
-        self.c_card_inner = "#15151e"
-        self.c_gold = "#d4af37"
-        self.c_gold_light = "#fcedb6"
+        self.c_card = "#101117"
+        self.c_card_inner = "#171822"
+        self.c_input = "#1e202e"
+        self.c_gold = "#e5b842"
+        self.c_gold_light = "#fbe69b"
         self.c_gold_border = "#aa8214"
         self.c_white = "#ffffff"
-        self.c_muted = "#a1a1aa"
-        self.c_danger = "#e11d48"
+        self.c_muted = "#9ca3af"
+        self.c_danger = "#ef4444"
 
         self.configure(bg=self.c_bg)
 
         self.process = None
         self.running = False
         self.config_path = os.path.join(get_app_dir(), "p2tun_runtime_config.json")
+        self.show_adv = False
 
         self._build_ui()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def _build_ui(self):
-        pad = tk.Frame(self, bg=self.c_bg, padx=20, pady=16)
-        pad.pack(fill=tk.BOTH, expand=True)
+        # Outer Container with 1px gold border
+        outer = tk.Frame(self, bg=self.c_card, highlightthickness=1.5,
+                         highlightbackground=self.c_gold_border, highlightcolor=self.c_gold)
+        outer.pack(fill=tk.BOTH, expand=True, padx=14, pady=14)
 
-        top_bar = tk.Frame(pad, bg=self.c_bg)
-        top_bar.pack(fill=tk.X, pady=(0, 14))
+        # Top Header Bar
+        hdr = tk.Frame(outer, bg=self.c_card, padx=14, pady=10)
+        hdr.pack(fill=tk.X)
 
-        title_lbl = tk.Label(top_bar, text="P 2 T U N", bg=self.c_bg, fg=self.c_gold, font=("Cinzel", 18, "bold"))
-        title_lbl.pack(anchor=tk.W)
+        title_box = tk.Frame(hdr, bg=self.c_card)
+        title_box.pack(side=tk.LEFT)
+        tk.Label(title_box, text="P 2 T U N", bg=self.c_card, fg=self.c_gold, font=("Segoe UI", 15, "bold")).pack(anchor=tk.W)
+        tk.Label(title_box, text="Proxy to TUN VPN • sing-box core", bg=self.c_card, fg=self.c_muted, font=("Segoe UI", 8)).pack(anchor=tk.W)
 
-        sub_lbl = tk.Label(top_bar, text="Proxy to Virtual TUN Interface • Sing-box Core", bg=self.c_bg, fg=self.c_muted, font=("Segoe UI", 9))
-        sub_lbl.pack(anchor=tk.W, pady=(2, 0))
+        self.badge_core = tk.Label(hdr, text="READY", bg="#1a1c26", fg=self.c_gold_light,
+                                   font=("Segoe UI", 8, "bold"), padx=10, pady=3,
+                                   highlightthickness=1, highlightbackground=self.c_gold_border)
+        self.badge_core.pack(side=tk.RIGHT)
 
-        card_box = RoundedContainer(pad, bg=self.c_bg, border=self.c_gold_border, fill=self.c_card, radius=22, border_w=1.5)
-        card_box.pack(fill=tk.BOTH, expand=True)
+        # Body Container
+        body = tk.Frame(outer, bg=self.c_card, padx=14, pady=4)
+        body.pack(fill=tk.BOTH, expand=True)
 
-        inner = tk.Frame(card_box, bg=self.c_card, padx=18, pady=16)
-        card_box.create_window(0, 0, anchor="nw", window=inner, tags="inner_win")
+        # Protocol Selectors
+        proto_box = tk.Frame(body, bg=self.c_card)
+        proto_box.pack(fill=tk.X, pady=(0, 10))
 
-        def _resize_inner(e):
-            card_box.coords("inner_win", 0, 0)
-            inner.config(width=card_box.winfo_width(), height=card_box.winfo_height())
-        card_box.bind("<Configure>", lambda e: _resize_inner(e))
-
-        self._section_title(inner, "PROXY PROTOCOL")
-        proto_frame = tk.Frame(inner, bg=self.c_card)
-        proto_frame.pack(fill=tk.X, pady=(0, 12))
+        tk.Label(proto_box, text="PROTOCOL", bg=self.c_card, fg=self.c_gold, font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 4))
+        p_row = tk.Frame(proto_box, bg=self.c_card)
+        p_row.pack(fill=tk.X)
 
         self.proto_var = tk.StringVar(value="SOCKS5")
         self.proto_btns = {}
         for p in ["SOCKS5", "SOCKS4", "HTTP"]:
-            b = tk.Button(proto_frame, text=p, font=("Segoe UI", 9, "bold"), bd=1, relief=tk.FLAT,
-                          bg=self.c_gold if p == "SOCKS5" else self.c_card_inner,
+            b = tk.Button(p_row, text=p, font=("Segoe UI", 8, "bold"), bd=0, relief=tk.FLAT,
+                          bg=self.c_gold if p == "SOCKS5" else self.c_input,
                           fg="#000000" if p == "SOCKS5" else self.c_muted,
                           activebackground=self.c_gold_light, activeforeground="#000000",
-                          padx=16, pady=6, cursor="hand2", command=lambda val=p: self.set_proto(val))
-            b.pack(side=tk.LEFT, padx=(0, 8))
+                          padx=14, pady=5, cursor="hand2", command=lambda val=p: self.set_proto(val))
+            b.pack(side=tk.LEFT, padx=(0, 6))
             self.proto_btns[p] = b
 
-        target_hdr = tk.Frame(inner, bg=self.c_card)
-        target_hdr.pack(fill=tk.X, pady=(0, 4))
-        tk.Label(target_hdr, text="PROXY TARGET", bg=self.c_card, fg=self.c_gold, font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
-        btn_probe = tk.Button(target_hdr, text="Probe Port Latency", bg=self.c_card, fg=self.c_gold_light,
-                              activebackground=self.c_card, activeforeground=self.c_white, bd=0, cursor="hand2",
+        # Target Host & Port Box
+        target_box = tk.Frame(body, bg=self.c_card_inner, padx=10, pady=8, highlightthickness=1, highlightbackground=self.c_gold_border)
+        target_box.pack(fill=tk.X, pady=(0, 8))
+
+        top_tgt = tk.Frame(target_box, bg=self.c_card_inner)
+        top_tgt.pack(fill=tk.X, pady=(0, 4))
+        tk.Label(top_tgt, text="TARGET PROXY", bg=self.c_card_inner, fg=self.c_gold, font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
+
+        btn_probe = tk.Button(top_tgt, text="Probe Port Latency", bg=self.c_card_inner, fg=self.c_gold_light,
+                              activebackground=self.c_card_inner, activeforeground=self.c_white, bd=0, cursor="hand2",
                               font=("Segoe UI", 8, "underline"), command=self.probe_port)
         btn_probe.pack(side=tk.RIGHT)
 
-        row_target = tk.Frame(inner, bg=self.c_card)
-        row_target.pack(fill=tk.X, pady=(0, 10))
+        input_row = tk.Frame(target_box, bg=self.c_card_inner)
+        input_row.pack(fill=tk.X)
 
-        tk.Label(row_target, text="Host", bg=self.c_card, fg=self.c_white, font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT, padx=(0, 6))
+        tk.Label(input_row, text="Host", bg=self.c_card_inner, fg=self.c_white, font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT, padx=(0, 4))
         self.host_var = tk.StringVar(value="127.0.0.1")
-        self.e_host = self._create_rounded_entry(row_target, self.host_var, width=22)
-        self.e_host.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 12))
+        self.e_host = self._entry(input_row, self.host_var, width=16)
+        self.e_host.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8), ipady=2)
 
-        tk.Label(row_target, text="Port", bg=self.c_card, fg=self.c_white, font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT, padx=(0, 6))
+        tk.Label(input_row, text="Port", bg=self.c_card_inner, fg=self.c_white, font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT, padx=(0, 4))
         self.port_var = tk.StringVar(value="1080")
-        self.e_port = self._create_rounded_entry(row_target, self.port_var, width=8)
-        self.e_port.pack(side=tk.LEFT)
+        self.e_port = self._entry(input_row, self.port_var, width=6)
+        self.e_port.pack(side=tk.LEFT, ipady=2)
 
-        self._section_title(inner, "AUTHENTICATION (OPTIONAL)")
-        row_auth = tk.Frame(inner, bg=self.c_card)
-        row_auth.pack(fill=tk.X, pady=(0, 10))
+        # Advanced Settings Accordion
+        self.btn_adv = tk.Button(body, text="▼ Optional Settings (Auth, TUN Stack, LAN)", bg=self.c_card, fg=self.c_muted,
+                                 activebackground=self.c_card, activeforeground=self.c_gold_light, bd=0, cursor="hand2",
+                                 font=("Segoe UI", 8, "bold"), command=self.toggle_adv)
+        self.btn_adv.pack(anchor=tk.W, pady=(0, 4))
 
-        tk.Label(row_auth, text="User", bg=self.c_card, fg=self.c_white, font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT, padx=(0, 6))
+        self.adv_frame = tk.Frame(body, bg=self.c_card_inner, padx=10, pady=8, highlightthickness=1, highlightbackground=self.c_gold_border)
+
+        row_a = tk.Frame(self.adv_frame, bg=self.c_card_inner)
+        row_a.pack(fill=tk.X, pady=(0, 6))
+        tk.Label(row_a, text="User", bg=self.c_card_inner, fg=self.c_white, font=("Segoe UI", 8)).pack(side=tk.LEFT, padx=(0, 4))
         self.user_var = tk.StringVar(value="")
-        self.e_user = self._create_rounded_entry(row_auth, self.user_var, width=16)
-        self.e_user.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 12))
+        self._entry(row_a, self.user_var, width=12).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8), ipady=1)
 
-        tk.Label(row_auth, text="Pass", bg=self.c_card, fg=self.c_white, font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT, padx=(0, 6))
+        tk.Label(row_a, text="Pass", bg=self.c_card_inner, fg=self.c_white, font=("Segoe UI", 8)).pack(side=tk.LEFT, padx=(0, 4))
         self.pass_var = tk.StringVar(value="")
-        self.e_pass = self._create_rounded_entry(row_auth, self.pass_var, width=16, show="*")
-        self.e_pass.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self._entry(row_a, self.pass_var, width=12, show="*").pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=1)
 
-        self._section_title(inner, "TUN ADAPTER CONFIGURATION")
-        row_tun = tk.Frame(inner, bg=self.c_card)
-        row_tun.pack(fill=tk.X, pady=(0, 8))
-
-        tk.Label(row_tun, text="Stack", bg=self.c_card, fg=self.c_white, font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT, padx=(0, 6))
+        row_b = tk.Frame(self.adv_frame, bg=self.c_card_inner)
+        row_b.pack(fill=tk.X, pady=(0, 6))
+        tk.Label(row_b, text="Stack", bg=self.c_card_inner, fg=self.c_white, font=("Segoe UI", 8)).pack(side=tk.LEFT, padx=(0, 4))
         self.stack_var = tk.StringVar(value="gvisor")
-        combo = ttk.Combobox(row_tun, textvariable=self.stack_var, values=["gvisor", "system", "mixed"], state="readonly", width=12)
-        combo.pack(side=tk.LEFT, padx=(0, 14))
+        combo = ttk.Combobox(row_b, textvariable=self.stack_var, values=["gvisor", "system", "mixed"], state="readonly", width=8)
+        combo.pack(side=tk.LEFT, padx=(0, 8))
 
-        tk.Label(row_tun, text="Interface", bg=self.c_card, fg=self.c_white, font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT, padx=(0, 6))
+        tk.Label(row_b, text="Adapter", bg=self.c_card_inner, fg=self.c_white, font=("Segoe UI", 8)).pack(side=tk.LEFT, padx=(0, 4))
         self.iface_var = tk.StringVar(value="wintun" if platform.system() == "Windows" else "tun0")
-        self.e_iface = self._create_rounded_entry(row_tun, self.iface_var, width=10)
-        self.e_iface.pack(side=tk.LEFT)
+        self._entry(row_b, self.iface_var, width=8).pack(side=tk.LEFT, ipady=1)
 
         self.bypass_lan_var = tk.BooleanVar(value=True)
-        cb = tk.Checkbutton(inner, text="Bypass Private LAN subnets (10.0.0.0/8, 192.168.0.0/16)",
-                            variable=self.bypass_lan_var, bg=self.c_card, fg=self.c_white,
-                            selectcolor="#000000", activebackground=self.c_card, activeforeground=self.c_gold_light,
+        cb = tk.Checkbutton(self.adv_frame, text="Bypass LAN (192.168.x.x, 10.x.x.x)",
+                            variable=self.bypass_lan_var, bg=self.c_card_inner, fg=self.c_white,
+                            selectcolor="#000000", activebackground=self.c_card_inner, activeforeground=self.c_gold_light,
                             font=("Segoe UI", 8))
-        cb.pack(anchor=tk.W, pady=(0, 10))
+        cb.pack(anchor=tk.W)
 
-        status_box = RoundedContainer(inner, bg=self.c_card, border=self.c_gold_border, fill=self.c_card_inner, radius=16, border_w=1, height=36)
-        status_box.pack(fill=tk.X, pady=(0, 10))
+        # Status Capsule
+        stat_bar = tk.Frame(body, bg=self.c_card_inner, padx=10, pady=6, highlightthickness=1, highlightbackground=self.c_gold_border)
+        stat_bar.pack(fill=tk.X, pady=(0, 8))
 
         self.status_var = tk.StringVar(value="● DISCONNECTED")
-        self.lbl_status = tk.Label(status_box, textvariable=self.status_var, bg=self.c_card_inner, fg=self.c_muted, font=("Segoe UI", 9, "bold"))
-        self.lbl_status.place(relx=0.04, rely=0.5, anchor=tk.W)
+        self.lbl_status = tk.Label(stat_bar, textvariable=self.status_var, bg=self.c_card_inner, fg=self.c_muted, font=("Segoe UI", 8, "bold"))
+        self.lbl_status.pack(side=tk.LEFT)
 
         self.target_var = tk.StringVar(value="")
-        self.lbl_target = tk.Label(status_box, textvariable=self.target_var, bg=self.c_card_inner, fg=self.c_white, font=("Consolas", 8))
-        self.lbl_target.place(relx=0.96, rely=0.5, anchor=tk.E)
+        self.lbl_target = tk.Label(stat_bar, textvariable=self.target_var, bg=self.c_card_inner, fg=self.c_white, font=("Consolas", 8))
+        self.lbl_target.pack(side=tk.RIGHT)
 
-        self.btn_toggle = tk.Button(inner, text="CONNECT TUN INTERFACE", font=("Cinzel", 11, "bold"),
+        # Hero Action Button
+        self.btn_toggle = tk.Button(body, text="CONNECT TUN INTERFACE", font=("Segoe UI", 10, "bold"),
                                     bg=self.c_gold, fg="#000000", activebackground=self.c_gold_light, activeforeground="#000000",
-                                    bd=0, relief=tk.FLAT, pady=10, cursor="hand2", command=self.toggle_vpn)
-        self.btn_toggle.pack(fill=tk.X, pady=(0, 12))
+                                    bd=0, relief=tk.FLAT, pady=9, cursor="hand2", command=self.toggle_vpn)
+        self.btn_toggle.pack(fill=tk.X, pady=(0, 8))
 
-        term_hdr = tk.Frame(inner, bg=self.c_card)
-        term_hdr.pack(fill=tk.X, pady=(0, 4))
-        tk.Label(term_hdr, text="ENGINE LIVE STREAM", bg=self.c_card, fg=self.c_gold, font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
-        btn_clr = tk.Button(term_hdr, text="Clear", bg=self.c_card, fg=self.c_muted, bd=0, cursor="hand2",
-                            font=("Segoe UI", 8), command=self.clear_logs)
-        btn_clr.pack(side=tk.RIGHT)
+        # Terminal Box (Fit & Responsive)
+        term_top = tk.Frame(body, bg=self.c_card)
+        term_top.pack(fill=tk.X, pady=(0, 2))
+        tk.Label(term_top, text="ENGINE OUTPUT", bg=self.c_card, fg=self.c_gold, font=("Segoe UI", 7, "bold")).pack(side=tk.LEFT)
+        tk.Button(term_top, text="Clear", bg=self.c_card, fg=self.c_muted, bd=0, cursor="hand2",
+                  font=("Segoe UI", 7), command=self.clear_logs).pack(side=tk.RIGHT)
 
-        term_wrap = RoundedContainer(inner, bg=self.c_card, border=self.c_gold_border, fill="#050507", radius=16, border_w=1)
-        term_wrap.pack(fill=tk.BOTH, expand=True)
+        term_box = tk.Frame(body, bg="#060609", highlightthickness=1, highlightbackground=self.c_gold_border)
+        term_box.pack(fill=tk.BOTH, expand=True)
 
-        self.log_text = scrolledtext.ScrolledText(term_wrap, wrap=tk.WORD, height=6, bg="#050507", fg="#fcedb6",
+        self.log_text = scrolledtext.ScrolledText(term_box, wrap=tk.WORD, height=6, bg="#060609", fg="#fbe69b",
                                                   font=("Consolas", 8), insertbackground="white", relief=tk.FLAT, bd=0)
-        self.log_text.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+        self.log_text.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
 
-    def _section_title(self, parent, text):
-        lbl = tk.Label(parent, text=text, bg=self.c_card, fg=self.c_gold, font=("Segoe UI", 8, "bold"))
-        lbl.pack(anchor=tk.W, pady=(4, 4))
+    def _entry(self, parent, variable, width=15, show=None):
+        return tk.Entry(parent, textvariable=variable, bg=self.c_input, fg=self.c_white,
+                        insertbackground=self.c_gold, relief=tk.FLAT, highlightthickness=1,
+                        highlightbackground=self.c_gold_border, highlightcolor=self.c_gold,
+                        width=width, font=("Segoe UI", 9), show=show)
 
-    def _create_rounded_entry(self, parent, variable, width=15, show=None):
-        e = tk.Entry(parent, textvariable=variable, bg=self.c_card_inner, fg=self.c_white,
-                     insertbackground=self.c_gold, relief=tk.FLAT, highlightthickness=1.5,
-                     highlightbackground=self.c_gold_border, highlightcolor=self.c_gold,
-                     width=width, font=("Segoe UI", 9), show=show)
-        return e
+    def toggle_adv(self):
+        if self.show_adv:
+            self.adv_frame.pack_forget()
+            self.btn_adv.config(text="▼ Optional Settings (Auth, TUN Stack, LAN)")
+            self.show_adv = False
+        else:
+            self.adv_frame.pack(fill=tk.X, pady=(0, 8), before=self.btn_toggle)
+            self.btn_adv.config(text="▲ Hide Optional Settings")
+            self.show_adv = True
 
     def set_proto(self, p):
         self.proto_var.set(p)
@@ -247,8 +233,8 @@ class P2TUNDesktop(tk.Tk):
             if name == p:
                 btn.config(bg=self.c_gold, fg="#000000")
             else:
-                btn.config(bg=self.c_card_inner, fg=self.c_muted)
-        self.log(f"[i] Selected protocol: {p}")
+                btn.config(bg=self.c_input, fg=self.c_muted)
+        self.log(f"[i] Protocol switched: {p}")
 
     def log(self, msg):
         self.log_text.insert(tk.END, msg + "\n")
@@ -265,7 +251,7 @@ class P2TUNDesktop(tk.Tk):
             return
 
         port = int(port_s)
-        self.log(f"[*] Probing proxy target {host}:{port}...")
+        self.log(f"[*] Checking latency for {host}:{port}...")
 
         def _run():
             start = time.time()
@@ -273,7 +259,7 @@ class P2TUNDesktop(tk.Tk):
                 s = socket.create_connection((host, port), timeout=2.0)
                 s.close()
                 lat = int((time.time() - start) * 1000)
-                self.after(0, self.log, f"[✓] Target reachable! TCP latency: {lat}ms")
+                self.after(0, self.log, f"[✓] Reachable! Handshake: {lat}ms")
             except Exception as e:
                 self.after(0, self.log, f"[!] Probe failed: {e}")
 
@@ -378,8 +364,8 @@ class P2TUNDesktop(tk.Tk):
             messagebox.showerror("Check Failed", chk.stderr or chk.stdout)
             return
 
-        self.log(f"[*] Engine startup: {core_exec}")
-        self.log(f"[*] Forwarding to {self.proto_var.get()} {self.host_var.get()}:{self.port_var.get()}")
+        self.log(f"[*] Starting TUN tunnel: {core_exec}")
+        self.log(f"[*] Outbound: {self.proto_var.get()} {self.host_var.get()}:{self.port_var.get()}")
 
         try:
             cflags = subprocess.CREATE_NO_WINDOW if (platform.system() == "Windows" and hasattr(subprocess, 'CREATE_NO_WINDOW')) else 0
@@ -394,13 +380,14 @@ class P2TUNDesktop(tk.Tk):
             self.running = True
             self.status_var.set("● ROUTING ACTIVE")
             self.lbl_status.config(fg=self.c_gold)
+            self.badge_core.config(text="ACTIVE", fg="#86efac")
             self.target_var.set(f"{self.proto_var.get()} {self.host_var.get()}:{self.port_var.get()}")
-            self.btn_toggle.config(text="DISCONNECT TUN INTERFACE", bg=self.c_danger, fg=self.c_white, activebackground="#be123c")
+            self.btn_toggle.config(text="DISCONNECT TUN INTERFACE", bg=self.c_danger, fg=self.c_white, activebackground="#dc2626")
 
             threading.Thread(target=self._stream_output, daemon=True).start()
         except PermissionError:
-            self.log("[!] Root/Administrator privileges required for TUN adapter creation.")
-            messagebox.showerror("Privilege Error", "Root or Administrator privileges are required to create a TUN device.")
+            self.log("[!] Root/Administrator required for TUN creation.")
+            messagebox.showerror("Elevation Required", "Administrator/Root privileges are required to create a TUN device.")
             self.stop_vpn()
         except Exception as e:
             self.log(f"[!] Launch error: {e}")
@@ -441,9 +428,10 @@ class P2TUNDesktop(tk.Tk):
 
         self.status_var.set("● DISCONNECTED")
         self.lbl_status.config(fg=self.c_muted)
+        self.badge_core.config(text="READY", fg=self.c_gold_light)
         self.target_var.set("")
         self.btn_toggle.config(text="CONNECT TUN INTERFACE", bg=self.c_gold, fg="#000000", activebackground=self.c_gold_light)
-        self.log("[*] Tunnel disconnected.")
+        self.log("[*] Tunnel offline.")
 
     def on_close(self):
         if self.running:

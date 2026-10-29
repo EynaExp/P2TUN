@@ -3,60 +3,61 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>P2TUN — Luxury Black & Gold TUN VPN</title>
+  <title>P2TUN — Proxy to TUN VPN Client</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #070709;
-      --card-bg: #0e0e12;
-      --card-inner: #15151b;
-      --gold-primary: #d4af37;
-      --gold-light: #f7e7a9;
-      --gold-dark: #aa8214;
-      --gold-gradient: linear-gradient(135deg, #fcedb6 0%, #d4af37 50%, #aa8214 100%);
-      --gold-border: rgba(212, 175, 55, 0.28);
-      --gold-glow: rgba(212, 175, 55, 0.35);
-      --text-white: #ffffff;
-      --text-soft: #e2e8f0;
-      --text-muted: #a3a3b3;
-      --danger: #e11d48;
-      --danger-gradient: linear-gradient(135deg, #fb7185 0%, #e11d48 100%);
-      --radius-pill: 9999px;
-      --radius-box: 24px;
-      --radius-input: 20px;
+      --card: #0f1015;
+      --card-inner: #15161f;
+      --input-bg: #1a1b26;
+      --gold-primary: #e5b842;
+      --gold-light: #fbe69b;
+      --gold-dark: #b8860b;
+      --gold-gradient: linear-gradient(135deg, #fbe69b 0%, #e5b842 50%, #b8860b 100%);
+      --gold-border: rgba(229, 184, 66, 0.28);
+      --gold-glow: rgba(229, 184, 66, 0.35);
+      --white: #ffffff;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --danger: #ef4444;
+      --danger-gradient: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
+      --pill: 9999px;
+      --radius-card: 26px;
+      --radius-inner: 20px;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
 
     body {
-      background: radial-gradient(circle at 50% 0%, #1e1b12 0%, var(--bg) 65%);
-      color: var(--text-soft);
+      background: radial-gradient(circle at 50% -10%, #201a0e 0%, var(--bg) 70%);
+      color: var(--text);
       min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 30px 16px;
+      padding: 24px 16px;
     }
 
-    .container {
+    .app-card {
       width: 100%;
-      max-width: 620px;
-      background: var(--card-bg);
+      max-width: 580px;
+      background: var(--card);
       border: 1.5px solid var(--gold-border);
-      border-radius: var(--radius-box);
-      box-shadow: 0 25px 65px -15px rgba(0, 0, 0, 0.9), 0 0 35px -10px var(--gold-glow);
-      padding: 30px;
+      border-radius: var(--radius-card);
+      box-shadow: 0 25px 65px -15px rgba(0, 0, 0, 0.9), 0 0 40px -10px var(--gold-glow);
+      padding: 26px 28px;
       display: flex;
       flex-direction: column;
-      gap: 22px;
+      gap: 18px;
     }
 
     /* Header */
@@ -64,8 +65,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid rgba(212, 175, 55, 0.18);
-      padding-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(229, 184, 66, 0.16);
     }
 
     .brand {
@@ -77,209 +78,247 @@
     .logo-badge {
       width: 44px;
       height: 44px;
-      border-radius: var(--radius-pill);
+      border-radius: var(--pill);
       background: var(--gold-gradient);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 16px var(--gold-glow);
+      box-shadow: 0 0 18px var(--gold-glow);
+      flex-shrink: 0;
     }
 
     .logo-badge svg {
       width: 24px;
       height: 24px;
       stroke: #000000;
-      stroke-width: 2.2;
+      stroke-width: 2.4;
       fill: none;
     }
 
-    .title-wrap h1 {
-      font-family: 'Cinzel', serif;
-      font-size: 1.45rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      background: var(--gold-gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+    .brand-text h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: var(--white);
+      line-height: 1.2;
     }
 
-    .title-wrap p {
-      font-size: 0.8rem;
+    .brand-text p {
+      font-size: 0.78rem;
       color: var(--text-muted);
-      margin-top: 1px;
     }
 
-    .core-pill {
+    .badge-core {
       font-size: 0.72rem;
       font-weight: 700;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
       color: var(--gold-light);
+      background: rgba(229, 184, 66, 0.1);
       border: 1px solid var(--gold-border);
-      background: rgba(212, 175, 55, 0.08);
-      padding: 6px 14px;
-      border-radius: var(--radius-pill);
+      padding: 5px 14px;
+      border-radius: var(--pill);
       text-transform: uppercase;
     }
 
-    /* Protocol Pills */
-    .protocol-capsule {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
+    /* Quick Connect Box */
+    .quick-box {
       background: var(--card-inner);
-      padding: 6px;
-      border-radius: var(--radius-pill);
       border: 1.5px solid var(--gold-border);
-      gap: 6px;
+      border-radius: var(--radius-inner);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
-    .proto-item {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      padding: 10px 16px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      border-radius: var(--radius-pill);
-      cursor: pointer;
-      transition: all 0.25s ease;
-      letter-spacing: 0.03em;
-    }
-
-    .proto-item:hover {
-      color: var(--gold-light);
-    }
-
-    .proto-item.active {
-      background: var(--gold-gradient);
-      color: #000000;
-      font-weight: 800;
-      box-shadow: 0 4px 14px var(--gold-glow);
-    }
-
-    /* Inputs */
-    .section-label {
+    .box-title {
       font-size: 0.72rem;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--gold-primary);
-      margin-bottom: -12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    .input-row {
+    /* Protocol Pills */
+    .capsule-group {
       display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 12px;
+      grid-template-columns: repeat(3, 1fr);
+      background: var(--input-bg);
+      border: 1px solid var(--gold-border);
+      border-radius: var(--pill);
+      padding: 4px;
+      gap: 4px;
     }
 
-    .input-row.half {
-      grid-template-columns: 1fr 1fr;
+    .capsule-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 9px 14px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border-radius: var(--pill);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: 0.03em;
     }
 
-    .field-box {
+    .capsule-btn:hover { color: var(--gold-light); }
+    .capsule-btn.active {
+      background: var(--gold-gradient);
+      color: #000000;
+      font-weight: 800;
+      box-shadow: 0 4px 12px var(--gold-glow);
+    }
+
+    /* Main Inputs */
+    .row-inputs {
+      display: grid;
+      grid-template-columns: 2.2fr 1fr;
+      gap: 10px;
+    }
+
+    .field {
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
 
-    .field-label {
+    .field-lbl {
       font-size: 0.8rem;
       font-weight: 600;
-      color: var(--text-white);
-      display: flex;
-      justify-content: space-between;
+      color: var(--white);
       padding-left: 8px;
     }
 
-    .probe-link {
+    input, select {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1.5px solid var(--gold-border);
+      border-radius: var(--pill);
+      color: var(--white);
+      padding: 11px 18px;
+      font-size: 0.92rem;
+      font-weight: 500;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--gold-primary);
+      box-shadow: 0 0 14px var(--gold-glow);
+    }
+
+    input::placeholder { color: #6b7280; }
+
+    /* Ping Probe Button */
+    .probe-btn {
       background: transparent;
       border: none;
       color: var(--gold-light);
       cursor: pointer;
       font-size: 0.75rem;
-      text-decoration: underline;
       font-weight: 600;
+      text-decoration: underline;
+      padding: 0;
     }
-    .probe-link:hover { color: #ffffff; }
+    .probe-btn:hover { color: var(--white); }
 
-    input, select {
-      width: 100%;
-      background: var(--card-inner);
-      border: 1.5px solid var(--gold-border);
-      border-radius: var(--radius-input);
-      color: var(--text-white);
-      padding: 12px 18px;
-      font-size: 0.92rem;
-      font-weight: 500;
-      outline: none;
-      transition: all 0.25s ease;
-    }
-
-    input:focus, select:focus {
-      border-color: var(--gold-primary);
-      box-shadow: 0 0 15px var(--gold-glow);
-    }
-
-    input::placeholder { color: #646473; }
-
-    /* Switch */
-    .option-card {
+    /* Expandable Settings */
+    .expander {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 14px 20px;
-      background: var(--card-inner);
-      border: 1.5px solid var(--gold-border);
-      border-radius: var(--radius-pill);
+      gap: 6px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: var(--pill);
+      align-self: flex-start;
+      transition: color 0.2s;
     }
 
-    .opt-title { font-size: 0.85rem; font-weight: 700; color: var(--text-white); }
-    .opt-desc { font-size: 0.75rem; color: var(--text-muted); }
+    .expander:hover { color: var(--gold-light); }
+    .expander svg { transition: transform 0.2s; }
+    .expander.open svg { transform: rotate(90deg); }
+
+    .advanced-drawer {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      background: var(--card-inner);
+      border: 1px dashed var(--gold-border);
+      border-radius: var(--radius-inner);
+      padding: 14px 16px;
+    }
+
+    .advanced-drawer.open { display: flex; }
+
+    .row-half {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* Bypass LAN Pill */
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 10px;
+    }
+
+    .toggle-title { font-size: 0.82rem; font-weight: 600; color: var(--white); }
+    .toggle-sub { font-size: 0.72rem; color: var(--text-muted); }
 
     .switch {
       position: relative;
       display: inline-block;
-      width: 44px;
-      height: 24px;
+      width: 42px;
+      height: 22px;
     }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
       position: absolute;
       cursor: pointer;
       top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #2b2b36;
+      background-color: #2e2f3d;
       transition: .3s;
-      border-radius: var(--radius-pill);
+      border-radius: var(--pill);
       border: 1px solid var(--gold-border);
     }
     .slider:before {
       position: absolute;
       content: "";
-      height: 16px;
-      width: 16px;
+      height: 14px;
+      width: 14px;
       left: 3px;
       bottom: 3px;
-      background-color: #ffffff;
+      background-color: var(--white);
       transition: .3s;
       border-radius: 50%;
     }
-    input:checked + .slider {
-      background: var(--gold-gradient);
-    }
+    input:checked + .slider { background: var(--gold-gradient); }
     input:checked + .slider:before {
       background-color: #000000;
       transform: translateX(20px);
     }
 
-    /* Status Bar */
+    /* Status Capsule */
     .status-capsule {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 18px;
+      padding: 11px 20px;
       background: var(--card-inner);
-      border: 1px solid rgba(212, 175, 55, 0.25);
-      border-radius: var(--radius-pill);
+      border: 1.5px solid var(--gold-border);
+      border-radius: var(--pill);
     }
 
     .status-left {
@@ -292,9 +331,10 @@
       width: 10px;
       height: 10px;
       border-radius: 50%;
-      background: #525260;
+      background: #4b5563;
       position: relative;
     }
+
     .pulse-dot.active {
       background: var(--gold-primary);
       box-shadow: 0 0 12px var(--gold-primary);
@@ -304,29 +344,29 @@
       font-size: 0.82rem;
       font-weight: 700;
       color: var(--text-muted);
+      letter-spacing: 0.02em;
     }
     .status-text.active { color: var(--gold-light); }
 
     .status-target {
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.78rem;
-      color: var(--text-white);
+      color: var(--white);
     }
 
-    /* Main Button */
-    .btn-main {
+    /* Big Hero Button */
+    .btn-connect {
       width: 100%;
-      padding: 15px 24px;
+      padding: 16px 24px;
       background: var(--gold-gradient);
       color: #000000;
       border: none;
-      border-radius: var(--radius-pill);
-      font-family: 'Cinzel', serif;
+      border-radius: var(--pill);
       font-size: 1.05rem;
       font-weight: 800;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.05em;
       cursor: pointer;
-      box-shadow: 0 8px 24px -4px var(--gold-glow);
+      box-shadow: 0 10px 25px -4px var(--gold-glow);
       transition: all 0.25s ease;
       display: flex;
       align-items: center;
@@ -334,145 +374,156 @@
       gap: 10px;
     }
 
-    .btn-main:hover {
+    .btn-connect:hover {
       transform: translateY(-2px);
-      filter: brightness(1.1);
-      box-shadow: 0 12px 28px 0px var(--gold-glow);
+      filter: brightness(1.08);
+      box-shadow: 0 14px 30px 0px var(--gold-glow);
     }
 
-    .btn-main.connected {
+    .btn-connect:active { transform: translateY(1px); }
+
+    .btn-connect.connected {
       background: var(--danger-gradient);
-      color: #ffffff;
-      box-shadow: 0 8px 24px -4px rgba(225, 29, 72, 0.4);
+      color: var(--white);
+      box-shadow: 0 10px 25px -4px rgba(239, 68, 68, 0.45);
     }
 
-    /* Logs Terminal */
-    .term-box {
+    /* Log Output Box */
+    .log-box {
       border: 1.5px solid var(--gold-border);
-      border-radius: var(--radius-box);
-      background: #060608;
+      border-radius: var(--radius-inner);
+      background: #08080c;
       overflow: hidden;
       display: flex;
       flex-direction: column;
     }
 
-    .term-header {
+    .log-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 16px;
-      border-bottom: 1px solid rgba(212, 175, 55, 0.15);
-      background: #0b0b0e;
+      padding: 9px 16px;
+      background: #0f1017;
+      border-bottom: 1px solid rgba(229, 184, 66, 0.15);
       font-size: 0.72rem;
       font-weight: 800;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.06em;
       color: var(--gold-primary);
       text-transform: uppercase;
     }
 
-    .term-btn {
+    .log-clear-btn {
       background: transparent;
       border: none;
       color: var(--text-muted);
       cursor: pointer;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
     }
-    .term-btn:hover { color: var(--gold-light); }
+    .log-clear-btn:hover { color: var(--gold-light); }
 
-    .term-content {
-      height: 130px;
-      padding: 12px 16px;
+    .log-terminal {
+      height: 120px;
+      padding: 10px 14px;
       overflow-y: auto;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.74rem;
       line-height: 1.5;
-      color: #e2e8f0;
+      color: #e5e7eb;
     }
 
-    .line { white-space: pre-wrap; word-break: break-all; margin-bottom: 2px; }
-    .line.info { color: var(--gold-light); }
-    .line.err { color: #f87171; }
-    .line.ok { color: #86efac; }
+    .log-line { white-space: pre-wrap; word-break: break-all; margin-bottom: 2px; }
+    .log-line.info { color: var(--gold-light); }
+    .log-line.err { color: #f87171; }
+    .log-line.ok { color: #86efac; }
   </style>
 </head>
 <body>
 
-  <div class="container">
+  <div class="app-card">
+    <!-- Header -->
     <div class="header">
       <div class="brand">
         <div class="logo-badge">
           <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
         </div>
-        <div class="title-wrap">
+        <div class="brand-text">
           <h1>P2TUN</h1>
           <p>Proxy to Virtual TUN Interface</p>
         </div>
       </div>
-      <div class="core-pill">sing-box core</div>
+      <div class="badge-core">sing-box core</div>
     </div>
 
-    <!-- Protocol Capsules -->
-    <div class="protocol-capsule">
-      <button class="proto-item active" onclick="setProto('SOCKS5', this)">SOCKS5</button>
-      <button class="proto-item" onclick="setProto('SOCKS4', this)">SOCKS4</button>
-      <button class="proto-item" onclick="setProto('HTTP', this)">HTTP</button>
-    </div>
+    <!-- Quick Connect Box -->
+    <div class="quick-box">
+      <div class="box-title">
+        <span>Protocol</span>
+        <button class="probe-btn" onclick="probePort()">Check Port Latency</button>
+      </div>
 
-    <!-- Proxy Target -->
-    <div class="section-label">Proxy Target</div>
-    <div class="input-row">
-      <div class="field-box">
-        <div class="field-label">
-          <span>Server Host</span>
-          <button class="probe-link" onclick="probePort()">Probe Latency</button>
+      <!-- Protocol Capsule Buttons -->
+      <div class="capsule-group">
+        <button class="capsule-btn active" onclick="setProto('SOCKS5', this)">SOCKS5</button>
+        <button class="capsule-btn" onclick="setProto('SOCKS4', this)">SOCKS4</button>
+        <button class="capsule-btn" onclick="setProto('HTTP', this)">HTTP</button>
+      </div>
+
+      <!-- Host & Port in Single Row -->
+      <div class="row-inputs">
+        <div class="field">
+          <label class="field-lbl">Server Host / IP</label>
+          <input type="text" id="host" value="127.0.0.1" placeholder="127.0.0.1">
         </div>
-        <input type="text" id="host" value="127.0.0.1" placeholder="127.0.0.1">
-      </div>
-      <div class="field-box">
-        <div class="field-label">Port</div>
-        <input type="number" id="port" value="1080" placeholder="1080">
-      </div>
-    </div>
-
-    <!-- Credentials -->
-    <div class="section-label">Authentication</div>
-    <div class="input-row half">
-      <div class="field-box">
-        <div class="field-label">Username / ID (Optional)</div>
-        <input type="text" id="user" placeholder="Username">
-      </div>
-      <div class="field-box">
-        <div class="field-label">Password (Optional)</div>
-        <input type="password" id="pass" placeholder="Password">
+        <div class="field">
+          <label class="field-lbl">Port</label>
+          <input type="number" id="port" value="1080" placeholder="1080" min="1" max="65535">
+        </div>
       </div>
     </div>
 
-    <!-- TUN Configuration -->
-    <div class="section-label">TUN Settings</div>
-    <div class="input-row half">
-      <div class="field-box">
-        <div class="field-label">Network Stack</div>
-        <select id="stack">
-          <option value="gvisor" selected>gVisor (Userspace)</option>
-          <option value="system">System Kernel TUN</option>
-          <option value="mixed">Mixed Stack</option>
-        </select>
-      </div>
-      <div class="field-box">
-        <div class="field-label">Virtual Adapter</div>
-        <input type="text" id="iface" value="tun0" placeholder="tun0 or wintun">
-      </div>
-    </div>
+    <!-- Collapsible Advanced Settings (Cleaner, friendlier) -->
+    <button class="expander" id="advBtn" onclick="toggleAdvanced()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+      <span>Optional Settings (Auth, Adapter, LAN)</span>
+    </button>
 
-    <div class="option-card">
-      <div>
-        <div class="opt-title">Bypass Private LAN</div>
-        <div class="opt-desc">Exempt RFC1918 subnets (10.0.0.0/8, 192.168.0.0/16)</div>
+    <div class="advanced-drawer" id="advDrawer">
+      <div class="row-half">
+        <div class="field">
+          <label class="field-lbl">Username / User ID</label>
+          <input type="text" id="user" placeholder="Optional">
+        </div>
+        <div class="field">
+          <label class="field-lbl">Password</label>
+          <input type="password" id="pass" placeholder="Optional">
+        </div>
       </div>
-      <label class="switch">
-        <input type="checkbox" id="bypassLan" checked>
-        <span class="slider"></span>
-      </label>
+
+      <div class="row-half">
+        <div class="field">
+          <label class="field-lbl">Network Stack</label>
+          <select id="stack">
+            <option value="gvisor" selected>gVisor (Userspace — Safe)</option>
+            <option value="system">System Kernel TUN</option>
+            <option value="mixed">Mixed Stack</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-lbl">Adapter Name</label>
+          <input type="text" id="iface" value="tun0" placeholder="tun0 or wintun">
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-title">Bypass Private LAN</div>
+          <div class="toggle-sub">Keep local network traffic direct (192.168.x.x, 10.x.x.x)</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="bypassLan" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
     </div>
 
     <!-- Status Capsule -->
@@ -484,18 +535,18 @@
       <div class="status-target" id="statusTarget"></div>
     </div>
 
-    <!-- Connect Button -->
-    <button id="toggleBtn" class="btn-main" onclick="toggleTunnel()">
+    <!-- Big Connect Pill Button -->
+    <button id="toggleBtn" class="btn-connect" onclick="toggleTunnel()">
       <span id="btnLabel">CONNECT TUN INTERFACE</span>
     </button>
 
-    <!-- Terminal -->
-    <div class="term-box">
-      <div class="term-header">
-        <span>Engine Live Output</span>
-        <button class="term-btn" onclick="clearLogs()">Clear</button>
+    <!-- Terminal Box -->
+    <div class="log-box">
+      <div class="log-header">
+        <span>Engine Output</span>
+        <button class="log-clear-btn" onclick="clearLogs()">Clear</button>
       </div>
-      <div class="term-content" id="termContent"></div>
+      <div class="log-terminal" id="term"></div>
     </div>
   </div>
 
@@ -503,16 +554,23 @@
     let currentProto = 'SOCKS5';
     let isConnected = false;
 
-    const term = document.getElementById('termContent');
+    const term = document.getElementById('term');
     const toggleBtn = document.getElementById('toggleBtn');
     const btnLabel = document.getElementById('btnLabel');
     const statusDot = document.getElementById('statusDot');
     const statusText = document.getElementById('statusText');
     const statusTarget = document.getElementById('statusTarget');
 
+    function toggleAdvanced() {
+      const drawer = document.getElementById('advDrawer');
+      const btn = document.getElementById('advBtn');
+      drawer.classList.toggle('open');
+      btn.classList.toggle('open');
+    }
+
     function setProto(p, el) {
       currentProto = p;
-      document.querySelectorAll('.proto-item').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.capsule-btn').forEach(b => b.classList.remove('active'));
       el.classList.add('active');
       log(`[i] Selected protocol: ${p}`, 'info');
     }
@@ -521,7 +579,7 @@
 
     function log(msg, cls='normal') {
       const l = document.createElement('div');
-      l.className = `line ${cls}`;
+      l.className = `log-line ${cls}`;
       l.textContent = msg;
       term.appendChild(l);
       term.scrollTop = term.scrollHeight;
@@ -550,7 +608,7 @@
       const host = document.getElementById('host').value.trim();
       const port = parseInt(document.getElementById('port').value, 10);
       if (!host || !port) { alert('Enter host and port'); return; }
-      log(`[*] Probing ${host}:${port}...`, 'info');
+      log(`[*] Checking reachability for ${host}:${port}...`, 'info');
       try {
         const res = await fetch('/api/test', {
           method: 'POST',
@@ -558,7 +616,7 @@
           body: JSON.stringify({host, port})
         });
         const d = await res.json();
-        if (d.ok) log(`[✓] Reachable! Latency: ${d.latency}ms`, 'ok');
+        if (d.ok) log(`[✓] Target reachable! TCP Latency: ${d.latency}ms`, 'ok');
         else log(`[!] Probe failed: ${d.error}`, 'err');
       } catch (e) {
         log(`[!] Network error: ${e.message}`, 'err');
@@ -575,7 +633,7 @@
 
     async function toggleTunnel() {
       if (isConnected) {
-        log('[*] Stopping TUN VPN interface...', 'info');
+        log('[*] Terminating TUN interface...', 'info');
         await fetch('/api/stop', { method: 'POST' });
         updateUI(false);
       } else {
@@ -594,7 +652,7 @@
           return;
         }
 
-        log(`[*] Initiating tunnel -> ${payload.protocol} ${payload.host}:${payload.port}...`, 'info');
+        log(`[*] Initiating TUN tunnel -> ${payload.protocol} ${payload.host}:${payload.port}...`, 'info');
         try {
           const res = await fetch('/api/start', {
             method: 'POST',
