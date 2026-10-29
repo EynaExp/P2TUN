@@ -1,0 +1,25 @@
+# Binaries and packages
+bin/
+dist/
+build/
+release/
+*.tar.gz
+*.zip
+*.exe
+sing-box
+sing-box.exe
+wintun.dll
+p2tun-desktop-linux
+p2tun-webgui-linux
+p2tun-linux
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.spec
+
+# Runtime configs & logs
+p2tun_runtime_config.json
+*.log
