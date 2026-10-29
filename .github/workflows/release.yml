@@ -1,0 +1,79 @@
+name: Build & Release P2TUN
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & Publish Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pyinstaller
+
+      - name: Download sing-box and wintun assets
+        run: |
+          mkdir -p bin release/linux release/windows
+          curl -sL https://github.com/SagerNet/sing-box/releases/download/v1.14.4/sing-box-1.14.4-linux-amd64.tar.gz -o sing-linux.tar.gz
+          curl -sL https://github.com/SagerNet/sing-box/releases/download/v1.14.4/sing-box-1.14.4-windows-amd64.zip -o sing-win.zip
+          curl -sL https://www.wintun.net/builds/wintun-0.14.1.zip -o wintun.zip
+          tar -xzf sing-linux.tar.gz --strip-components=1 sing-box-1.14.4-linux-amd64/sing-box
+          unzip -q -j sing-win.zip sing-box-1.14.4-windows-amd64/sing-box.exe
+          unzip -q -j wintun.zip wintun/bin/amd64/wintun.dll
+          mv sing-box bin/
+          mv sing-box.exe bin/
+          mv wintun.dll bin/
+          chmod +x bin/sing-box
+
+      - name: Build Go Controller Binaries
+        run: |
+          cd go-app
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o ../release/linux/p2tun-webgui-linux main.go
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o ../release/windows/p2tun.exe main.go
+
+      - name: Build Native Linux Desktop Executable
+        run: |
+          pyinstaller --onefile --noconfirm --clean \
+            --add-binary "bin/sing-box:bin" \
+            --name "p2tun-desktop-linux" \
+            src/app.py
+          mv dist/p2tun-desktop-linux release/linux/
+
+      - name: Package Archives
+        run: |
+          cp bin/sing-box release/linux/
+          cp bin/sing-box.exe release/windows/
+          cp bin/wintun.dll release/windows/
+          cd release
+          tar -czf p2tun-linux-x86_64.tar.gz -C linux .
+          zip -r -q p2tun-windows-x86_64.zip windows/
+          ls -lh *.tar.gz *.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            release/p2tun-linux-x86_64.tar.gz
+            release/p2tun-windows-x86_64.zip
+          draft: false
+          prerelease: false
+          name: "Release ${{ github.ref_name }}"
+          generate_release_notes: true
