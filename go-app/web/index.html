@@ -398,6 +398,87 @@
       flex-direction: column;
     }
 
+    /* Modal dialog */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-card {
+      width: 100%;
+      max-width: 520px;
+      background: var(--card);
+      border: 1.5px solid var(--gold-border);
+      border-radius: var(--radius-inner);
+      padding: 20px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .modal-hdr {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(229, 184, 66, 0.2);
+      padding-bottom: 10px;
+    }
+    .modal-hdr h2 { font-size: 1.1rem; color: var(--gold-primary); font-weight: 700; }
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
+    .modal-close:hover { color: var(--white); }
+    .scanner-table-wrap {
+      max-height: 220px;
+      overflow-y: auto;
+      border: 1px solid var(--gold-border);
+      border-radius: 12px;
+      background: var(--input-bg);
+    }
+    table.scanner-tbl {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      text-align: left;
+    }
+    table.scanner-tbl th {
+      position: sticky;
+      top: 0;
+      background: var(--card-inner);
+      color: var(--gold-light);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--gold-border);
+      font-weight: 700;
+    }
+    table.scanner-tbl td {
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(229, 184, 66, 0.1);
+      color: var(--white);
+    }
+    table.scanner-tbl tr:hover {
+      background: rgba(229, 184, 66, 0.12);
+      cursor: pointer;
+    }
+    .badge-proto {
+      background: rgba(229, 184, 66, 0.2);
+      color: var(--gold-light);
+      padding: 2px 8px;
+      border-radius: var(--pill);
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
     .log-header {
       display: flex;
       justify-content: space-between;
@@ -457,8 +538,11 @@
     <!-- Quick Connect Box -->
     <div class="quick-box">
       <div class="box-title">
-        <span>Protocol</span>
-        <button class="probe-btn" onclick="probePort()">Check Port Latency</button>
+        <span>Target Proxy</span>
+        <div style="display:flex; gap:12px; align-items:center;">
+          <button class="probe-btn" style="color:var(--gold-primary); font-weight:700;" onclick="openScanner()">🔍 Scan Local Proxies</button>
+          <button class="probe-btn" onclick="probePort()">Check Latency</button>
+        </div>
       </div>
 
       <!-- Protocol Capsule Buttons -->
@@ -550,6 +634,39 @@
     </div>
   </div>
 
+  <!-- Local Proxy Scanner Modal -->
+  <div class="modal-overlay" id="scannerModal">
+    <div class="modal-card">
+      <div class="modal-hdr">
+        <h2>Active Local Proxies</h2>
+        <button class="modal-close" onclick="closeScanner()">&times;</button>
+      </div>
+      <div style="font-size:0.78rem; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center;">
+        <span id="scanStatus">Scanning system for proxy listeners...</span>
+        <button class="probe-btn" onclick="fetchScan()">↻ Rescan</button>
+      </div>
+      <div class="scanner-table-wrap">
+        <table class="scanner-tbl">
+          <thead>
+            <tr>
+              <th>Protocol</th>
+              <th>Host</th>
+              <th>Port</th>
+              <th>Application</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="scannerBody">
+            <tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">Searching listening ports...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="font-size:0.74rem; color:var(--text-muted); text-align:right;">
+        Tip: Click any row or 'Use' to auto-fill proxy configuration.
+      </div>
+    </div>
+  </div>
+
   <script>
     let currentProto = 'SOCKS5';
     let isConnected = false;
@@ -571,8 +688,65 @@
     function setProto(p, el) {
       currentProto = p;
       document.querySelectorAll('.capsule-btn').forEach(b => b.classList.remove('active'));
-      el.classList.add('active');
+      if (el) el.classList.add('active');
+      else {
+        document.querySelectorAll('.capsule-btn').forEach(b => {
+          if (b.textContent.trim() === p) b.classList.add('active');
+        });
+      }
       log(`[i] Selected protocol: ${p}`, 'info');
+    }
+
+    function openScanner() {
+      document.getElementById('scannerModal').classList.add('open');
+      fetchScan();
+    }
+
+    function closeScanner() {
+      document.getElementById('scannerModal').classList.remove('open');
+    }
+
+    async function fetchScan() {
+      const statusEl = document.getElementById('scanStatus');
+      const bodyEl = document.getElementById('scannerBody');
+      statusEl.textContent = 'Scanning listening ports...';
+      bodyEl.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:var(--text-muted);">Probing system ports for SOCKS/HTTP...</td></tr>';
+      try {
+        const res = await fetch('/api/scan');
+        const list = await res.json();
+        if (!list || list.length === 0) {
+          statusEl.textContent = 'No active proxies detected.';
+          bodyEl.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:var(--text-muted);">No proxies found on local ports.</td></tr>';
+          return;
+        }
+        statusEl.textContent = `Found ${list.length} proxy endpoints`;
+        bodyEl.innerHTML = '';
+        list.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><span class="badge-proto">${item.protocol}</span></td>
+            <td>${item.host}</td>
+            <td style="font-weight:700; color:var(--gold-light);">${item.port}</td>
+            <td style="color:var(--text-muted);">${item.app || 'Local App'}</td>
+            <td><button class="probe-btn" style="color:var(--gold-primary); font-weight:700;">Use</button></td>
+          `;
+          tr.onclick = () => {
+            selectProxy(item.protocol, item.host, item.port, item.app);
+          };
+          bodyEl.appendChild(tr);
+        });
+      } catch (err) {
+        statusEl.textContent = 'Scan failed: ' + err.message;
+        bodyEl.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:#f87171;">Scan request failed.</td></tr>';
+      }
+    }
+
+    function selectProxy(proto, host, port, app) {
+      setProto(proto);
+      document.getElementById('host').value = host;
+      document.getElementById('port').value = port;
+      log(`[✓] Selected ${proto} proxy on ${host}:${port} (${app || 'Local'})`, 'ok');
+      closeScanner();
     }
 
     function clearLogs() { term.innerHTML = ''; }

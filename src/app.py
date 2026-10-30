@@ -14,6 +14,8 @@ import time
 import platform
 import signal
 import socket
+import re
+import concurrent.futures
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
 
@@ -125,10 +127,18 @@ class P2TUNDesktop(tk.Tk):
         top_tgt.pack(fill=tk.X, pady=(0, 4))
         tk.Label(top_tgt, text="TARGET PROXY", bg=self.c_card_inner, fg=self.c_gold, font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
 
-        btn_probe = tk.Button(top_tgt, text="Probe Port Latency", bg=self.c_card_inner, fg=self.c_gold_light,
+        tgt_actions = tk.Frame(top_tgt, bg=self.c_card_inner)
+        tgt_actions.pack(side=tk.RIGHT)
+
+        btn_scan = tk.Button(tgt_actions, text="🔍 Scan Local Proxies", bg=self.c_card_inner, fg=self.c_gold,
+                             activebackground=self.c_card_inner, activeforeground=self.c_white, bd=0, cursor="hand2",
+                             font=("Segoe UI", 8, "bold underline"), command=self.open_proxy_scanner)
+        btn_scan.pack(side=tk.LEFT, padx=(0, 10))
+
+        btn_probe = tk.Button(tgt_actions, text="Probe Port Latency", bg=self.c_card_inner, fg=self.c_gold_light,
                               activebackground=self.c_card_inner, activeforeground=self.c_white, bd=0, cursor="hand2",
                               font=("Segoe UI", 8, "underline"), command=self.probe_port)
-        btn_probe.pack(side=tk.RIGHT)
+        btn_probe.pack(side=tk.LEFT)
 
         input_row = tk.Frame(target_box, bg=self.c_card_inner)
         input_row.pack(fill=tk.X)
@@ -242,6 +252,186 @@ class P2TUNDesktop(tk.Tk):
 
     def clear_logs(self):
         self.log_text.delete("1.0", tk.END)
+
+    def open_proxy_scanner(self):
+        win = tk.Toplevel(self)
+        win.title("Local Proxy Finder")
+        win.geometry("460x380")
+        win.minsize(420, 320)
+        win.configure(bg=self.c_bg)
+        win.transient(self)
+
+        panel = tk.Frame(win, bg=self.c_card, padx=14, pady=12, highlightthickness=1.5,
+                         highlightbackground=self.c_gold_border, highlightcolor=self.c_gold)
+        panel.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        top_f = tk.Frame(panel, bg=self.c_card)
+        top_f.pack(fill=tk.X, pady=(0, 8))
+        tk.Label(top_f, text="ACTIVE LOCAL PROXIES", bg=self.c_card, fg=self.c_gold, font=("Segoe UI", 10, "bold")).pack(side=tk.LEFT)
+
+        status_lbl = tk.Label(top_f, text="Scanning...", bg=self.c_card, fg=self.c_gold_light, font=("Segoe UI", 8))
+        status_lbl.pack(side=tk.RIGHT)
+
+        list_frame = tk.Frame(panel, bg=self.c_card_inner, highlightthickness=1, highlightbackground=self.c_gold_border)
+        list_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+
+        tree_scroll = tk.Scrollbar(list_frame)
+        tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        style = ttk.Style(win)
+        style.theme_use("clam")
+        style.configure("Treeview", background=self.c_input, foreground=self.c_white, fieldbackground=self.c_input, rowheight=24)
+        style.configure("Treeview.Heading", background=self.c_card_inner, foreground=self.c_gold, font=("Segoe UI", 8, "bold"))
+        style.map("Treeview", background=[("selected", self.c_gold_border)])
+
+        cols = ("proto", "host", "port", "app")
+        tree = ttk.Treeview(list_frame, columns=cols, show="headings", yscrollcommand=tree_scroll.set, selectmode="browse")
+        tree.heading("proto", text="Protocol")
+        tree.heading("host", text="Host")
+        tree.heading("port", text="Port")
+        tree.heading("app", text="Application / Process")
+        tree.column("proto", width=75, anchor="center")
+        tree.column("host", width=95, anchor="center")
+        tree.column("port", width=65, anchor="center")
+        tree.column("app", width=140, anchor="w")
+        tree.pack(fill=tk.BOTH, expand=True)
+        tree_scroll.config(command=tree.yview)
+
+        def apply_selection():
+            sel = tree.selection()
+            if not sel:
+                messagebox.showinfo("Select Proxy", "Please select a detected proxy from the list.", parent=win)
+                return
+            item = tree.item(sel[0])["values"]
+            proto_val = str(item[0])
+            host_val = str(item[1])
+            port_val = str(item[2])
+
+            if proto_val in self.proto_btns:
+                self.set_proto(proto_val)
+            self.host_var.set(host_val)
+            self.port_var.set(port_val)
+            self.log(f"[✓] Selected {proto_val} proxy at {host_val}:{port_val} ({item[3]})")
+            win.destroy()
+
+        tree.bind("<Double-1>", lambda e: apply_selection())
+
+        b_row = tk.Frame(panel, bg=self.c_card)
+        b_row.pack(fill=tk.X)
+
+        btn_use = tk.Button(b_row, text="USE SELECTED PROXY", font=("Segoe UI", 9, "bold"),
+                            bg=self.c_gold, fg="#000000", activebackground=self.c_gold_light,
+                            activeforeground="#000000", bd=0, relief=tk.FLAT, padx=14, pady=6,
+                            cursor="hand2", command=apply_selection)
+        btn_use.pack(side=tk.LEFT)
+
+        def run_scan():
+            ports_map = {}
+            if platform.system() != "Windows":
+                try:
+                    out = subprocess.check_output(['ss', '-tulpn'], text=True)
+                    for line in out.splitlines()[1:]:
+                        parts = line.split()
+                        if len(parts) >= 5 and parts[1] == 'LISTEN':
+                            local = parts[4]
+                            proc = parts[6] if len(parts) > 6 else ''
+                            pname = ''
+                            m = re.search(r'users:\(\(\"([^\"]+)\"', proc)
+                            if m: pname = m.group(1)
+                            if ':' in local:
+                                h, p_s = local.rsplit(':', 1)
+                                if h in ('0.0.0.0', '*', '[::]', '::'): h = '127.0.0.1'
+                                elif '%' in h: h = h.split('%')[0]
+                                elif h in ('[::1]', '::1'): h = '127.0.0.1'
+                                try:
+                                    p = int(p_s)
+                                    if p not in ports_map: ports_map[p] = (h, pname)
+                                except: pass
+                except: pass
+            else:
+                try:
+                    out = subprocess.check_output(['netstat', '-ano'], text=True)
+                    for line in out.splitlines():
+                        if 'LISTENING' in line:
+                            parts = line.split()
+                            if len(parts) >= 2:
+                                local = parts[1]
+                                pid = parts[-1] if len(parts) >= 5 else ''
+                                if ':' in local:
+                                    h, p_s = local.rsplit(':', 1)
+                                    if h in ('0.0.0.0', '*', '[::]', '::'): h = '127.0.0.1'
+                                    try:
+                                        p = int(p_s)
+                                        if p not in ports_map: ports_map[p] = (h, f"PID:{pid}")
+                                    except: pass
+                except: pass
+
+            common = [1080, 10808, 10809, 2080, 7890, 7891, 8080, 8888, 8889, 9050, 9051, 9999, 11111, 20128, 4747]
+            for cp in common:
+                if cp not in ports_map: ports_map[cp] = ('127.0.0.1', '')
+
+            def check_sock(h, port):
+                types = []
+                try:
+                    s = socket.create_connection((h, port), timeout=0.25)
+                    s.sendall(b'\x05\x01\x00')
+                    r = s.recv(2)
+                    s.close()
+                    if r == b'\x05\x00': types.append('SOCKS5')
+                except: pass
+
+                try:
+                    s = socket.create_connection((h, port), timeout=0.25)
+                    s.sendall(b'\x04\x01\x00\x50\x01\x02\x03\x04\x00')
+                    r = s.recv(2)
+                    s.close()
+                    if len(r) >= 2 and r[0] == 0: types.append('SOCKS4')
+                except: pass
+
+                try:
+                    s = socket.create_connection((h, port), timeout=0.25)
+                    s.sendall(b'CONNECT 127.0.0.1:80 HTTP/1.1\r\nHost: 127.0.0.1:80\r\n\r\n')
+                    r = s.recv(12)
+                    s.close()
+                    if b'HTTP/' in r: types.append('HTTP')
+                except: pass
+                return types
+
+            found = []
+            def test_one(port, info):
+                h, app_name = info
+                ptypes = check_sock(h, port)
+                if ptypes:
+                    for pt in ptypes:
+                        found.append((pt, h, port, app_name or "Local App"))
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=25) as ex:
+                futures = [ex.submit(test_one, p, info) for p, info in ports_map.items()]
+                concurrent.futures.wait(futures)
+
+            found.sort(key=lambda x: (x[1], x[2], x[0]))
+
+            def update_tree():
+                for row in tree.get_children():
+                    tree.delete(row)
+                for f in found:
+                    tree.insert("", tk.END, values=f)
+                status_lbl.config(text=f"Found {len(found)} proxies")
+                btn_rescan.config(state=tk.NORMAL)
+
+            win.after(0, update_tree)
+
+        def start_scanner_thread():
+            status_lbl.config(text="Scanning...")
+            btn_rescan.config(state=tk.DISABLED)
+            threading.Thread(target=run_scan, daemon=True).start()
+
+        btn_rescan = tk.Button(b_row, text="Rescan", font=("Segoe UI", 8, "bold"),
+                               bg=self.c_input, fg=self.c_white, bd=0, relief=tk.FLAT,
+                               padx=10, pady=6, cursor="hand2", command=start_scanner_thread)
+        btn_rescan.pack(side=tk.RIGHT)
+
+        start_scanner_thread()
 
     def probe_port(self):
         host = self.host_var.get().strip()

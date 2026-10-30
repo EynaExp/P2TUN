@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -374,6 +375,118 @@ func main() {
 			"ok":      true,
 			"latency": latency,
 		})
+	})
+
+	// Scan Local Proxies API
+	mux.HandleFunc("/api/scan", func(w http.ResponseWriter, r *http.Request) {
+		type DiscoveredProxy struct {
+			Protocol string `json:"protocol"`
+			Host     string `json:"host"`
+			Port     int    `json:"port"`
+			App      string `json:"app"`
+		}
+
+		var discovered []DiscoveredProxy
+		var mu sync.Mutex
+		var wg sync.WaitGroup
+
+		ports := make(map[int]string)
+		if runtime.GOOS != "windows" {
+			out, err := exec.Command("ss", "-tulpn").Output()
+			if err == nil {
+				for _, line := range strings.Split(string(out), "\n") {
+					parts := strings.Fields(line)
+					if len(parts) >= 5 && parts[1] == "LISTEN" {
+						addr := parts[4]
+						pname := ""
+						if len(parts) > 6 && strings.Contains(parts[6], `users:(("`) {
+							sub := strings.Split(parts[6], `users:(("`)
+							if len(sub) > 1 {
+								pname = strings.Split(sub[1], `"`)[0]
+							}
+						}
+						idx := strings.LastIndex(addr, ":")
+						if idx != -1 {
+							var p int
+							if _, err := fmt.Sscanf(addr[idx+1:], "%d", &p); err == nil {
+								if _, ok := ports[p]; !ok {
+									ports[p] = pname
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		common := []int{1080, 10808, 10809, 2080, 7890, 7891, 8080, 8888, 8889, 9050, 9051, 9999, 11111, 20128, 4747}
+		for _, cp := range common {
+			if _, ok := ports[cp]; !ok {
+				ports[cp] = ""
+			}
+		}
+
+		sem := make(chan struct{}, 25)
+		for p, app := range ports {
+			wg.Add(1)
+			sem <- struct{}{}
+			go func(port int, appName string) {
+				defer wg.Done()
+				defer func() { <-sem }()
+
+				// 1. Check SOCKS5
+				if c, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", port), 250*time.Millisecond); err == nil {
+					c.SetDeadline(time.Now().Add(250 * time.Millisecond))
+					c.Write([]byte{0x05, 0x01, 0x00})
+					buf := make([]byte, 2)
+					if n, _ := c.Read(buf); n == 2 && buf[0] == 0x05 && buf[1] == 0x00 {
+						mu.Lock()
+						discovered = append(discovered, DiscoveredProxy{
+							Protocol: "SOCKS5", Host: "127.0.0.1", Port: port, App: appName,
+						})
+						mu.Unlock()
+					}
+					c.Close()
+				}
+
+				// 2. Check SOCKS4
+				if c, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", port), 250*time.Millisecond); err == nil {
+					c.SetDeadline(time.Now().Add(250 * time.Millisecond))
+					c.Write([]byte{0x04, 0x01, 0x00, 0x50, 0x01, 0x02, 0x03, 0x04, 0x00})
+					buf := make([]byte, 2)
+					if n, _ := c.Read(buf); n >= 2 && buf[0] == 0x00 {
+						mu.Lock()
+						discovered = append(discovered, DiscoveredProxy{
+							Protocol: "SOCKS4", Host: "127.0.0.1", Port: port, App: appName,
+						})
+						mu.Unlock()
+					}
+					c.Close()
+				}
+
+				// 3. Check HTTP Connect
+				if c, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", port), 250*time.Millisecond); err == nil {
+					c.SetDeadline(time.Now().Add(250 * time.Millisecond))
+					c.Write([]byte("CONNECT 127.0.0.1:80 HTTP/1.1\r\nHost: 127.0.0.1:80\r\n\r\n"))
+					buf := make([]byte, 16)
+					if n, _ := c.Read(buf); n > 0 && strings.Contains(string(buf[:n]), "HTTP/") {
+						mu.Lock()
+						discovered = append(discovered, DiscoveredProxy{
+							Protocol: "HTTP", Host: "127.0.0.1", Port: port, App: appName,
+						})
+						mu.Unlock()
+					}
+					c.Close()
+				}
+			}(p, app)
+		}
+		wg.Wait()
+
+		w.Header().Set("Content-Type", "application/json")
+		if discovered == nil {
+			discovered = []DiscoveredProxy{}
+		}
+		json.NewEncoder(w).Encode(discovered)
 	})
 
 	// Start API
